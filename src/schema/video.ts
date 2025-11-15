@@ -1,4 +1,5 @@
 import { gql } from "graphql-tag";
+import { Video } from "../models/videoModel";
 
 export const videoTypeDefs = gql`
   type Video {
@@ -13,48 +14,42 @@ export const videoTypeDefs = gql`
   extend type Query {
     videos(cat: String, limit: Int): [Video!]!
   }
+
+  extend type Mutation {
+    addVideo(
+      title: String!
+      channel: String!
+      cat: String!
+      thumbnail: String!
+      views: Int
+    ): Video!
+  }
 `;
 
 export const videoResolvers = {
   Query: {
-    videos: (_: unknown, args: { cat?: string; limit?: number }) => {
-      let results = allVideos;
-      if (args.cat) {
-        results = results.filter(
-          (v) => v.cat.toLowerCase() === args.cat!.toLowerCase()
-        );
+    videos: async (_: unknown, args: { cat?: string; limit?: number }) => {
+      const filter: Record<string, unknown> = {};
+      if (args.cat) filter.cat = args.cat;
+      const query = Video.find(filter);
+      if (args.limit && args.limit > 0) query.limit(args.limit);
+      return await query.exec();
+    },
+  },
+  Mutation: {
+    addVideo: async (
+      _: unknown,
+      args: {
+        title: string;
+        channel: string;
+        cat: string;
+        thumbnail: string;
+        views?: number;
       }
-      if (args.limit && args.limit > 0) {
-        results = results.slice(0, args.limit);
-      }
-      return results;
+    ) => {
+      const vid = new Video(args);
+      await vid.save();
+      return vid;
     },
   },
 };
-
-const allVideos = [
-  {
-    id: 1,
-    title: "Building Microfrontends",
-    channel: "Praveen Codes",
-    views: 54200,
-    cat: "Tech",
-    thumbnail: "https://placehold.co/320x180/202020/FFF?text=Thumb+1",
-  },
-  {
-    id: 2,
-    title: "Heap Sort In Action",
-    channel: "Algo Lab",
-    views: 209000,
-    cat: "Tech",
-    thumbnail: "https://placehold.co/320x180/202020/FFF?text=Thumb+2",
-  },
-  {
-    id: 3,
-    title: "Lo-Fi Beats Playlist",
-    channel: "Zen Beats",
-    views: 380000,
-    cat: "Music",
-    thumbnail: "https://placehold.co/320x180/202020/FFF?text=Thumb+3",
-  },
-];
