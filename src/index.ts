@@ -1,51 +1,33 @@
 import { ApolloServer } from "@apollo/server";
 import { startStandaloneServer } from "@apollo/server/standalone";
+import { makeExecutableSchema } from "@graphql-tools/schema";
 
-// Define schema (SDL)
-const typeDefs = `#graphql
-  type Video {
-    id: ID!
-    title: String!
-    channel: String!
-    views: Int!
-    cat: String!
-    thumbnail: String!
-  }
+import { videoTypeDefs, videoResolvers } from "./schema/video";
+import { userTypeDefs, userResolvers } from "./schema/user";
+import { commentTypeDefs, commentResolvers } from "./schema/comment";
 
-  type Query {
-    videos: [Video!]!
-  }
-`;
+const typeDefs = [
+  `#graphql
+    type Query {
+      _empty: String
+    }
+  `,
+  videoTypeDefs,
+  userTypeDefs,
+  commentTypeDefs,
+];
 
-// Provide resolvers
-const resolvers = {
-  Query: {
-    videos: () => [
-      {
-        id: 1,
-        title: "Building Microfrontends",
-        channel: "Praveen Codes",
-        views: 54200,
-        cat: "Tech",
-        thumbnail: "https://placehold.co/320x180/202020/FFF?text=Thumb+1",
-      },
-      {
-        id: 2,
-        title: "Heap Sort In Action",
-        channel: "Algo Lab",
-        views: 209000,
-        cat: "Tech",
-        thumbnail: "https://placehold.co/320x180/202020/FFF?text=Thumb+2",
-      },
-    ],
-  },
-};
+const resolvers = [videoResolvers, userResolvers, commentResolvers];
 
-// Create and start server
-const server = new ApolloServer({ typeDefs, resolvers });
+const schema = makeExecutableSchema({ typeDefs, resolvers });
+const server = new ApolloServer({ schema });
 
-const { url } = await startStandaloneServer(server, {
-  listen: { port: 4002 },
-});
+// ← wrap inside an async IIFE
+async function startServer() {
+  const { url } = await startStandaloneServer(server, {
+    listen: { port: 4002 },
+  });
+  console.log(`GraphQL server ready at ${url}`);
+}
 
-console.log(`🚀 YT4G GraphQL Server ready at ${url}`);
+startServer();
