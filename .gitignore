@@ -1,0 +1,14 @@
+# Node artifacts
+node_modules
+dist
+coverage
+.env
+.env.*
+npm-debug.log*
+
+# macOS system files
+.DS_Store
+
+# Optional editor settings
+.vscode
+.idea
