@@ -10,6 +10,7 @@ import { makeExecutableSchema } from "@graphql-tools/schema";
 import { videoTypeDefs, videoResolvers } from "./schema/video";
 import { userTypeDefs, userResolvers } from "./schema/user";
 import { commentTypeDefs, commentResolvers } from "./schema/comment";
+import { likeTypeDefs, likeResolvers } from "./schema/like";
 
 async function startServer() {
   try {
@@ -29,9 +30,15 @@ async function startServer() {
       videoTypeDefs,
       userTypeDefs,
       commentTypeDefs,
+      likeTypeDefs,
     ];
 
-    const resolvers = [videoResolvers, userResolvers, commentResolvers];
+    const resolvers = [
+      videoResolvers,
+      userResolvers,
+      commentResolvers,
+      likeResolvers,
+    ];
     const schema = makeExecutableSchema({ typeDefs, resolvers });
 
     const server = new ApolloServer({ schema });

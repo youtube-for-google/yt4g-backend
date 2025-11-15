@@ -1,4 +1,5 @@
 import { gql } from "graphql-tag";
+import { User } from "../models/userModel";
 
 export const userTypeDefs = gql`
   type User {
@@ -10,13 +11,21 @@ export const userTypeDefs = gql`
   extend type Query {
     users: [User!]!
   }
+
+  extend type Mutation {
+    addUser(name: String!, avatar: String): User!
+  }
 `;
 
 export const userResolvers = {
   Query: {
-    users: () => [
-      { id: 1, name: "Praveen", avatar: "https://placehold.co/48x48" },
-      { id: 2, name: "Alice", avatar: "https://placehold.co/48x48" },
-    ],
+    users: async () => await User.find(),
+  },
+  Mutation: {
+    addUser: async (_: unknown, args: { name: string; avatar?: string }) => {
+      const user = new User(args);
+      await user.save();
+      return user;
+    },
   },
 };
