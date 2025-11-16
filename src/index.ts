@@ -19,6 +19,8 @@ import { likeTypeDefs, likeResolvers } from "./schema/like";
 
 import { signToken } from "./auth/utils"; // your JWT helper
 
+import { authMiddleware } from "./auth/middleware";
+
 async function startServer() {
   try {
     await mongoose.connect(process.env.MONGO_URI as string);
@@ -51,6 +53,9 @@ async function startServer() {
     const app = express();
     app.use(cors({ origin: CLIENT_URL, credentials: true }));
     app.use(json());
+
+    //Plug-in the auth req.user before reaching Apollo
+    app.use(authMiddleware);
 
     // --- Session + Passport wiring ---
     app.use(
@@ -88,7 +93,15 @@ async function startServer() {
     });
 
     await apolloServer.start();
-    app.use("/graphql", expressMiddleware(apolloServer));
+
+    app.use(
+      "/graphql",
+      expressMiddleware(apolloServer, {
+        context: async ({ req }) => ({
+          user: (req as any).user || null,
+        }),
+      })
+    );
 
     const PORT = Number(process.env.PORT) || 4000;
     app.listen(PORT, () =>

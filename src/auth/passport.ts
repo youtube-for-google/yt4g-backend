@@ -32,7 +32,6 @@ passport.use(
       try {
         let user = await User.findOne({ providerId: id, provider: "google" });
 
-        console.log("++++++", { name, email, avatar, id });
         if (!user) {
           user = await User.create({
             name: displayName,

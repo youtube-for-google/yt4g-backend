@@ -13,7 +13,7 @@ export const likeTypeDefs = gql`
   }
 
   extend type Mutation {
-    likeVideo(videoId: ID!, userId: ID!): Boolean
+    likeVideo(videoId: ID!): Boolean
   }
 `;
 
@@ -23,21 +23,27 @@ export const likeResolvers = {
       await Like.countDocuments({ videoId: args.videoId }),
   },
   Mutation: {
-    likeVideo: async (
-      _: unknown,
-      args: { videoId: string; userId: string }
-    ) => {
+    likeVideo: async (_: unknown, args: { videoId: string }, context: any) => {
+      if (!context.user) {
+        throw new Error("Not authenticated");
+      }
+
+      const userId = context.user.id;
+      const videoId = args.videoId;
+
       const existing = await Like.findOne({
-        videoId: args.videoId,
-        userId: args.userId,
+        videoId,
+        userId,
       });
+
       if (existing) {
         await Like.deleteOne({ _id: existing._id });
         return false; // unliked
-      } else {
-        await new Like(args).save();
-        return true; // liked
       }
+
+      const like = new Like({ videoId, userId });
+      await like.save();
+      return true;
     },
   },
 };
