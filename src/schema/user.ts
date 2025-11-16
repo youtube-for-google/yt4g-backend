@@ -6,10 +6,14 @@ export const userTypeDefs = gql`
     id: ID!
     name: String!
     avatar: String
+    email: String
+    provider: String
+    providerId: String
   }
 
   extend type Query {
     users: [User!]!
+    me: User
   }
 
   extend type Mutation {
