@@ -8,6 +8,8 @@ const userSchema = new Schema(
     avatar: { type: String }, // from Google profile.photos
     provider: { type: String }, // e.g., 'google', 'github'
     providerId: { type: String, unique: true }, // provider's unique user id
+    refreshToken: { type: String }, // for validation
+    tokenVersion: { type: Number, default: 0 }, // for validation
   },
   { timestamps: true }
 );

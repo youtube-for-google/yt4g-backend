@@ -16,7 +16,7 @@ export const commentTypeDefs = gql`
   }
 
   extend type Mutation {
-    addComment(videoId: ID!, authorId: ID!, text: String!): Comment!
+    addComment(videoId: ID!, text: String!): Comment!
   }
 `;
 
@@ -28,14 +28,24 @@ export const commentResolvers = {
   Mutation: {
     addComment: async (
       _: unknown,
-      args: { videoId: string; authorId: string; text: string }
+      args: { videoId: string; text: string },
+      context: any
     ) => {
+      // require an authenticated user
+      if (!context.user) throw new Error("Not authenticated");
+
+      const authorId = context.user.id;
+
+      // create comment tied to the logged‑in user
       const comment = new Comment({
         text: args.text,
-        author: args.authorId,
+        author: authorId,
         videoId: args.videoId,
       });
+
       await comment.save();
+
+      //populate author details for immediate return
       return await comment.populate("author");
     },
   },

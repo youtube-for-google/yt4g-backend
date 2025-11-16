@@ -9,6 +9,7 @@ export const videoTypeDefs = gql`
     views: Int!
     cat: String!
     thumbnail: String!
+    uploader: User
   }
 
   extend type Query {
@@ -18,7 +19,6 @@ export const videoTypeDefs = gql`
   extend type Mutation {
     addVideo(
       title: String!
-      channel: String!
       cat: String!
       thumbnail: String!
       views: Int
@@ -45,10 +45,24 @@ export const videoResolvers = {
         cat: string;
         thumbnail: string;
         views?: number;
-      }
+      },
+      context: any
     ) => {
-      const vid = new Video(args);
+      // require authentication
+      if (!context.user) throw new Error("Not authenticated");
+
+      // derive uploader info from user
+      const uploaderName = context.user.name;
+      const uploaderId = context.user.id;
+
+      // save video
+      const vid = new Video({
+        ...args,
+        channel: uploaderName, // or keep separate 'uploader' field
+        uploader: uploaderId,
+      });
       await vid.save();
+
       return vid;
     },
   },

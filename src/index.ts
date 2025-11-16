@@ -17,9 +17,13 @@ import { userTypeDefs, userResolvers } from "./schema/user";
 import { commentTypeDefs, commentResolvers } from "./schema/comment";
 import { likeTypeDefs, likeResolvers } from "./schema/like";
 
-import { signToken } from "./auth/utils"; // your JWT helper
+import { generateRefreshToken, signToken } from "./auth/utils"; // your JWT helper
 
 import { authMiddleware } from "./auth/middleware";
+
+import cookieParser from "cookie-parser";
+
+import { User } from "./models/userModel";
 
 async function startServer() {
   try {
@@ -54,7 +58,10 @@ async function startServer() {
     app.use(cors({ origin: CLIENT_URL, credentials: true }));
     app.use(json());
 
-    //Plug-in the auth req.user before reaching Apollo
+    // --- Enable cookie parsing ---
+    app.use(cookieParser());
+
+    // --- Plug-in the auth req.user before reaching Apollo ---
     app.use(authMiddleware);
 
     // --- Session + Passport wiring ---
@@ -77,15 +84,60 @@ async function startServer() {
     app.get(
       "/api/auth/callback/google",
       passport.authenticate("google", { failureRedirect: "/" }),
-      (req, res) => {
-        const token = signToken(req.user as any);
-        const redirectUrl = `${CLIENT_URL}/?token=${token}`;
-        res.redirect(redirectUrl);
+      async (req, res) => {
+        const user = req.user as any;
+
+        // Short‑lived Access Token
+        const accessToken = signToken(user); // keep your expiry ~15 min inside signToken()
+
+        // Long‑lived Refresh Token
+        const refreshToken = generateRefreshToken();
+        user.refreshToken = refreshToken;
+        await user.save();
+
+        // Send Refresh Token as secure, httpOnly cookie
+        res.cookie("rt", refreshToken, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === "production",
+          sameSite: "lax",
+          maxAge: 1000 * 60 * 60 * 24 * 7, // 7 days
+        });
+
+        // Redirect back to the shell with access token
+        const CLIENT_URL = process.env.CLIENT_URL || "http://localhost:4000";
+        res.redirect(`${CLIENT_URL}/?token=${accessToken}`);
       }
     );
 
     // --- Health checkup route for future container orchestration ---
     app.get("/health", (_req, res) => res.send("OK"));
+
+    // --- Refresh route action ---
+    app.post("/api/auth/refresh", async (req, res) => {
+      const refreshToken = req.cookies.rt;
+      if (!refreshToken)
+        return res.status(401).json({ error: "No refresh token" });
+
+      const user = await User.findOne({ refreshToken });
+      if (!user)
+        return res.status(403).json({ error: "Invalid refresh token" });
+
+      const newAccess = signToken(user);
+      res.json({ accessToken: newAccess });
+    });
+
+    // --- Logout actions ---
+    app.post("/api/auth/logout", async (req, res) => {
+      const token = req.cookies.rt;
+      if (token) {
+        await User.updateOne(
+          { refreshToken: token },
+          { $unset: { refreshToken: "" } }
+        );
+      }
+      res.clearCookie("rt");
+      res.sendStatus(204);
+    });
 
     // --- Apollo integration with Express ---
     const apolloServer = new ApolloServer({

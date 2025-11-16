@@ -17,6 +17,7 @@
     "@apollo/server": "^5.1.0",
     "@as-integrations/express5": "^1.1.2",
     "@graphql-tools/schema": "^10.0.29",
+    "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
     "dotenv": "^17.2.3",
     "express-session": "^1.18.2",
@@ -28,6 +29,7 @@
     "passport-google-oauth20": "^2.0.0"
   },
   "devDependencies": {
+    "@types/cookie-parser": "^1.4.10",
     "@types/cors": "^2.8.19",
     "@types/express-session": "^1.18.2",
     "@types/jsonwebtoken": "^9.0.10",

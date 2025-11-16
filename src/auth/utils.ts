@@ -1,6 +1,8 @@
 import jwt from "jsonwebtoken";
 import { Document } from "mongoose";
 
+import crypto from "crypto";
+
 /**
  * Shape of token payload we embed
  */
@@ -13,13 +15,16 @@ const SECRET = process.env.JWT_SECRET || "yt4g_dev_secret";
 
 /**
  * Issue a JWT for a given user document.
+ * Accepts any Mongoose document containing _id/name.
  */
-export function signToken(user: Document & { id: string; name: string }) {
+export function signToken(
+  user: Document & { id?: string; _id?: any; name?: string }
+) {
   const payload: TokenPayload = {
-    id: user.id,
-    name: user.get("name"),
+    id: user.id ?? String(user._id),
+    name: user.get?.("name") ?? (user as any).name ?? "User",
   };
-  return jwt.sign(payload, SECRET, { expiresIn: "7d" });
+  return jwt.sign(payload, SECRET, { expiresIn: "15m" }); // short‑lived access token
 }
 
 /**
@@ -31,4 +36,11 @@ export function verifyToken(token: string): TokenPayload | null {
   } catch {
     return null;
   }
+}
+
+/**
+ * Reusable random refresh token generator
+ */
+export function generateRefreshToken(): string {
+  return crypto.randomBytes(40).toString("hex");
 }

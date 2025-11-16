@@ -15,21 +15,21 @@ export const userTypeDefs = gql`
     users: [User!]!
     me: User
   }
-
-  extend type Mutation {
-    addUser(name: String!, avatar: String): User!
-  }
 `;
 
 export const userResolvers = {
   Query: {
     users: async () => await User.find(),
-  },
-  Mutation: {
-    addUser: async (_: unknown, args: { name: string; avatar?: string }) => {
-      const user = new User(args);
-      await user.save();
-      return user;
+
+    me: async (_: unknown, _args: unknown, context: any) => {
+      // require a valid token
+      if (!context.user) return null;
+
+      // return fresh user data from DB, not from token
+      const dbUser = await User.findById(context.user.id);
+
+      return dbUser;
     },
   },
+  Mutation: {},
 };
