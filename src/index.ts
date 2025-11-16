@@ -45,7 +45,7 @@ async function startServer() {
 
     const schema = makeExecutableSchema({ typeDefs, resolvers });
 
-    const CLIENT_URL = process.env.CLIENT_URL || "http://localhost:4001";
+    const CLIENT_URL = process.env.CLIENT_URL || "http://localhost:4000";
 
     // --- Express app baseline ---
     const app = express();
